@@ -8,89 +8,75 @@ import styles from "./dashboard.module.css";
 type Trip = {
   _id: string;
   name: string;
+  location?: string;
+  dates?: string;
+  budget?: number;
+  currency?: string;
   expenses?: [];
   photos?: [];
+  image?: string;
 };
 
 export default function DashboardPage() {
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [tripName, setTripName] = useState("");
+  const [trips, setTrips] = useState<
+    Trip[]
+  >([]);
 
-  // FETCH TRIPS
-  const fetchTrips = async () => {
-    try {
-      const response = await fetch(
-        "http://localhost:5000/api/trips"
-      );
+  const [loading, setLoading] =
+    useState(true);
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch trips");
-      }
+  const [error, setError] =
+    useState("");
 
-      const data = await response.json();
-
-      setTrips(data);
-    } catch (err) {
-      console.error(err);
-      setError("Could not load trips.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // LOAD TRIPS ON PAGE LOAD
   useEffect(() => {
+    const fetchTrips =
+      async () => {
+        try {
+          const response =
+            await fetch(
+              "http://localhost:5000/api/trips"
+            );
+
+          if (!response.ok) {
+            throw new Error(
+              "Failed to fetch trips"
+            );
+          }
+
+          const data =
+            await response.json();
+
+          setTrips(data);
+        } catch (err) {
+          console.error(err);
+
+          setError(
+            "Could not load trips."
+          );
+        } finally {
+          setLoading(false);
+        }
+      };
+
     fetchTrips();
   }, []);
 
-  // ADD NEW TRIP
-  const addTrip = async () => {
-    if (!tripName.trim()) return;
-
-    try {
-      const response = await fetch(
-        "http://localhost:5000/api/trips",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: tripName,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to create trip");
-      }
-
-      const newTrip = await response.json();
-
-      setTrips((prev) => [...prev, newTrip]);
-
-      setTripName("");
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // LOADING
   if (loading) {
     return (
       <main className={styles.page}>
-        <p>Loading trips...</p>
+        <p className={styles.message}>
+          Loading trips...
+        </p>
       </main>
     );
   }
 
-  // ERROR
   if (error) {
     return (
       <main className={styles.page}>
-        <p>{error}</p>
+        <p className={styles.error}>
+          {error}
+        </p>
       </main>
     );
   }
@@ -103,70 +89,136 @@ export default function DashboardPage() {
         </h1>
 
         <p className={styles.subtitle}>
-          Everything you need for your next journey
+          Everything you need for
+          your next journey
         </p>
+
+        <Link
+          href="/create"
+          className={
+            styles.createButton
+          }
+        >
+          + New Trip
+        </Link>
       </header>
 
-      {/* ADD TRIP FORM */}
-      <div className={styles.form}>
-        <input
-          type="text"
-          placeholder="Enter trip name"
-          value={tripName}
-          onChange={(e) =>
-            setTripName(e.target.value)
+      <section className={styles.section}>
+        <h2
+          className={
+            styles.sectionTitle
           }
-          className={styles.input}
-        />
-
-        <button
-          onClick={addTrip}
-          className={styles.button}
         >
-          Add Trip
-        </button>
-      </div>
+          Your Trips
+        </h2>
 
-      <h2 className={styles.sectionTitle}>
-        Your Trips
-      </h2>
+        {trips.length === 0 ? (
+          <p className={styles.message}>
+            No trips available yet.
+          </p>
+        ) : (
+          <div
+            className={
+              styles.tripsGrid
+            }
+          >
+            {trips.map((trip) => (
+              <Link
+                key={trip._id}
+                href={`/trip/${trip._id}`}
+                className={
+                  styles.tripCard
+                }
+              >
+                <div
+                  className={
+                    styles.thumbWrap
+                  }
+                >
+                  <Image
+                    src={
+                      trip.image ||
+                      "/placeholder.svg"
+                    }
+                    alt={trip.name}
+                    fill
+                    className={
+                      styles.thumb
+                    }
+                  />
+                </div>
 
-      {trips.length === 0 ? (
-        <p>No trips available yet.</p>
-      ) : (
-        <div className={styles.tripsGrid}>
-          {trips.map((trip) => (
-            <Link
-              key={trip._id}
-              href={`/trip/${trip._id}`}
-              className={styles.tripCard}
-            >
-              <div className={styles.thumbWrap}>
-                <Image
-                  src="/placeholder.svg"
-                  alt={trip.name}
-                  fill
-                  className={styles.thumb}
-                />
-              </div>
+                <div
+                  className={
+                    styles.tripBody
+                  }
+                >
+                  <h3
+                    className={
+                      styles.tripName
+                    }
+                  >
+                    {trip.name}
+                  </h3>
 
-              <div className={styles.tripBody}>
-                <h3 className={styles.tripName}>
-                  {trip.name}
-                </h3>
+                  <p
+                    className={
+                      styles.tripMeta
+                    }
+                  >
+                    {trip.location ||
+                      "Unknown Location"}
+                  </p>
 
-                <p className={styles.tripMeta}>
-                  Expenses: {trip.expenses?.length || 0}
-                </p>
+                  <p
+                    className={
+                      styles.tripMeta
+                    }
+                  >
+                    {trip.dates ||
+                      "No dates"}
+                  </p>
 
-                <p className={styles.tripMeta}>
-                  Photos: {trip.photos?.length || 0}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+                  <p
+                    className={
+                      styles.tripMeta
+                    }
+                  >
+                    Budget:
+                    {" "}
+                    {trip.currency}
+                    {" "}
+                    {trip.budget ||
+                      0}
+                  </p>
+
+                  <p
+                    className={
+                      styles.tripMeta
+                    }
+                  >
+                    Expenses:
+                    {" "}
+                    {trip.expenses
+                      ?.length || 0}
+                  </p>
+
+                  <p
+                    className={
+                      styles.tripMeta
+                    }
+                  >
+                    Photos:
+                    {" "}
+                    {trip.photos
+                      ?.length || 0}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
