@@ -1,504 +1,593 @@
+
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import styles from "./trip.module.css";
+import {
+  useEffect,
+  useState,
+} from "react";
 
-type Photo = {
-  url: string;
-};
+import {
+  useParams,
+  useRouter,
+} from "next/navigation";
 
 type Expense = {
   label: string;
+  category: string;
   amount: number;
 };
 
-type Trip = {
-  _id: string;
-  name: string;
-  location: string;
-  dates: string;
-  budget: number;
-  currency: string;
-  photos: Photo[];
-  expenses: Expense[];
+type Photo = {
+  url: string;
+  caption: string;
 };
 
 export default function TripPage() {
-  const { id } = useParams();
+  const params =
+    useParams();
 
-  const router = useRouter();
+  const router =
+    useRouter();
 
   const [trip, setTrip] =
-    useState<Trip | null>(null);
+    useState<any>(null);
 
-  const [photoUrl, setPhotoUrl] =
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
     useState("");
 
-  const [expenseLabel, setExpenseLabel] =
-    useState("");
+  const [newExpense, setNewExpense] =
+    useState({
+      label: "",
+      category: "",
+      amount: "",
+    });
 
-  const [expenseAmount, setExpenseAmount] =
-    useState("");
+  const [newPhoto, setNewPhoto] =
+    useState({
+      url: "",
+      caption: "",
+    });
 
+  //
   // FETCH TRIP
+  //
   useEffect(() => {
-    const fetchTrip = async () => {
+    fetchTrip();
+  }, []);
+
+  const fetchTrip =
+    async () => {
       try {
-        const response = await fetch(
-          `http://localhost:5000/api/trips/${id}`
-        );
+        const token =
+          localStorage.getItem(
+            "token"
+          );
+
+        const response =
+          await fetch(
+            `http://localhost:5000/api/trips/${params.id}`,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+            }
+          );
 
         const data =
           await response.json();
 
-        setTrip(data);
-      } catch (error) {
-        console.error(error);
+        if (
+          !response.ok
+        ) {
+          throw new Error(
+            data.error ||
+              "Failed to fetch trip"
+          );
+        }
+
+        setTrip({
+          ...data,
+
+          expenses:
+            data.expenses ||
+            [],
+
+          photos:
+            data.photos ||
+            [],
+        });
+      } catch (err: any) {
+        setError(
+          err.message
+        );
+      } finally {
+        setLoading(
+          false
+        );
       }
     };
 
-    fetchTrip();
-  }, [id]);
+ //
+// SAVE TRIP
+//
+const saveTrip = async (updatedTrip = trip) => {
+  try {
+    const token = localStorage.getItem("token");
 
-  // SAVE TRIP DETAILS
-  const saveTrip = async () => {
-    if (!trip) return;
-
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/trips/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify(trip),
-        }
-      );
-
-      const updatedTrip =
-        await response.json();
-
-      setTrip(updatedTrip);
-
-      alert("Trip saved!");
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // ADD PHOTO
-  const addPhoto = async () => {
-    if (!trip || !photoUrl.trim())
-      return;
-
-    const updatedPhotos = [
-      ...trip.photos,
+    const response = await fetch(
+      `http://localhost:5000/api/trips/${params.id}`,
       {
-        url: photoUrl,
-      },
-    ];
-
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/trips/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            photos: updatedPhotos,
-          }),
-        }
-      );
-
-      const updatedTrip =
-        await response.json();
-
-      setTrip(updatedTrip);
-
-      setPhotoUrl("");
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // DELETE PHOTO
-  const deletePhoto = async (
-    indexToDelete: number
-  ) => {
-    if (!trip) return;
-
-    const updatedPhotos =
-      trip.photos.filter(
-        (_, index) =>
-          index !== indexToDelete
-      );
-
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/trips/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            photos: updatedPhotos,
-          }),
-        }
-      );
-
-      const updatedTrip =
-        await response.json();
-
-      setTrip(updatedTrip);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // ADD EXPENSE
-  const addExpense = async () => {
-    if (
-      !trip ||
-      !expenseLabel.trim() ||
-      !expenseAmount
-    )
-      return;
-
-    const updatedExpenses = [
-      ...trip.expenses,
-      {
-        label: expenseLabel,
-        amount: Number(
-          expenseAmount
-        ),
-      },
-    ];
-
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/trips/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            expenses:
-              updatedExpenses,
-          }),
-        }
-      );
-
-      const updatedTrip =
-        await response.json();
-
-      setTrip(updatedTrip);
-
-      setExpenseLabel("");
-      setExpenseAmount("");
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // DELETE EXPENSE
-  const deleteExpense = async (
-    indexToDelete: number
-  ) => {
-    if (!trip) return;
-
-    const updatedExpenses =
-      trip.expenses.filter(
-        (_, index) =>
-          index !== indexToDelete
-      );
-
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/trips/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            expenses:
-              updatedExpenses,
-          }),
-        }
-      );
-
-      const updatedTrip =
-        await response.json();
-
-      setTrip(updatedTrip);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // DELETE TRIP
-  const deleteTrip = async () => {
-    const confirmed = confirm(
-      "Delete this trip?"
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updatedTrip),
+      }
     );
 
-    if (!confirmed) return;
-
-    try {
-      await fetch(
-        `http://localhost:5000/api/trips/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      router.push("/dashboard");
-    } catch (error) {
-      console.error(error);
+    if (!response.ok) {
+      throw new Error("Failed to save trip");
     }
+
+    const savedTrip = await response.json();
+
+    setTrip(savedTrip);
+  } catch (err: any) {
+    alert(err.message);
+  }
+};
+
+//
+// DELETE TRIP
+//
+const deleteTrip = async () => {
+  const confirmed = confirm("Delete this trip?");
+
+  if (!confirmed) return;
+
+  try {
+    const token = localStorage.getItem("token");
+
+    await fetch(
+      `http://localhost:5000/api/trips/${params.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    router.push("/dashboard");
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+//
+// ADD EXPENSE
+//
+const addExpense = async () => {
+  if (!newExpense.label || !newExpense.amount) {
+    return;
+  }
+
+  const updatedTrip = {
+    ...trip,
+    expenses: [
+      ...(trip.expenses || []),
+      {
+        label: newExpense.label,
+        category: newExpense.category,
+        amount: Number(newExpense.amount),
+      },
+    ],
   };
 
-  // TOTAL
+  setTrip(updatedTrip);
+
+  setNewExpense({
+    label: "",
+    category: "",
+    amount: "",
+  });
+
+  await saveTrip(updatedTrip);
+};
+
+//
+// DELETE EXPENSE
+//
+const deleteExpense = async (index: number) => {
+  const updatedTrip = {
+    ...trip,
+    expenses: trip.expenses.filter(
+      (_: Expense, i: number) => i !== index
+    ),
+  };
+
+  setTrip(updatedTrip);
+
+  await saveTrip(updatedTrip);
+};
+  // ADD PHOTO
+  //
+  const addPhoto =
+    () => {
+      if (!newPhoto.url)
+        return;
+
+      setTrip({
+        ...trip,
+
+        photos: [
+          ...trip.photos,
+
+          {
+            url: newPhoto.url,
+
+            caption:
+              newPhoto.caption,
+          },
+        ],
+      });
+
+      setNewPhoto({
+        url: "",
+        caption: "",
+      });
+    };
+
+  //
+  // DELETE PHOTO
+  //
+  const deletePhoto =
+    (index: number) => {
+      const updated =
+        trip.photos.filter(
+          (
+            _: Photo,
+            i: number
+          ) =>
+            i !== index
+        );
+
+      setTrip({
+        ...trip,
+
+        photos:
+          updated,
+      });
+    };
+
+  //
+  // TOTAL EXPENSES
+  //
   const totalExpenses =
-    trip?.expenses.reduce(
-      (sum, expense) =>
-        sum + expense.amount,
+    trip?.expenses?.reduce(
+      (
+        sum: number,
+        expense: Expense
+      ) =>
+        sum +
+        expense.amount,
       0
     ) || 0;
 
-  // LOADING
-  if (!trip) {
+  if (loading) {
     return (
-      <main className={styles.page}>
-        <p>Loading...</p>
-      </main>
+      <div
+        style={{
+          background:
+            "#020617",
+          color: "white",
+          minHeight:
+            "100vh",
+          display: "flex",
+          justifyContent:
+            "center",
+          alignItems:
+            "center",
+          fontSize:
+            "24px",
+        }}
+      >
+        Loading trip...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        style={{
+          color: "red",
+          padding: 40,
+        }}
+      >
+        {error}
+      </div>
     );
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.card}>
-        {/* TITLE */}
-        <input
-          value={trip.name}
-          onChange={(e) =>
-            setTrip({
-              ...trip,
-              name: e.target.value,
-            })
-          }
-          className={styles.titleInput}
-        />
+    <main
+      style={{
+        background:
+          "#020617",
 
-        {/* DETAILS */}
-        <div className={styles.details}>
-          <input
-            type="text"
-            placeholder="Location"
-            value={trip.location}
-            onChange={(e) =>
-              setTrip({
-                ...trip,
-                location:
-                  e.target.value,
-              })
-            }
-            className={styles.input}
-          />
+        minHeight:
+          "100vh",
 
-          <input
-            type="text"
-            placeholder="Dates"
-            value={trip.dates}
-            onChange={(e) =>
-              setTrip({
-                ...trip,
-                dates:
-                  e.target.value,
-              })
-            }
-            className={styles.input}
-          />
+        color: "white",
 
-          <input
-            type="number"
-            placeholder="Budget"
-            value={trip.budget}
-            onChange={(e) =>
-              setTrip({
-                ...trip,
-                budget: Number(
-                  e.target.value
-                ),
-              })
-            }
-            className={styles.input}
-          />
+        padding: "40px",
 
-          <select
-            value={trip.currency}
-            onChange={(e) =>
-              setTrip({
-                ...trip,
-                currency:
-                  e.target.value,
-              })
-            }
-            className={styles.input}
-          >
-            <option value="KES">
-              KES
-            </option>
+        fontFamily:
+          "sans-serif",
+      }}
+    >
+      <div
+        style={{
+          background:
+            "#0f172a",
 
-            <option value="USD">
-              USD
-            </option>
+          borderRadius:
+            "24px",
 
-            <option value="EUR">
-              EUR
-            </option>
+          padding: "40px",
 
-            <option value="GBP">
-              GBP
-            </option>
-          </select>
-        </div>
+          marginBottom:
+            "30px",
+        }}
+      >
+        <h1
+          style={{
+            fontSize:
+              "48px",
 
-        {/* SAVE BUTTON */}
-        <button
-          onClick={saveTrip}
-          className={styles.saveButton}
+            marginBottom:
+              "10px",
+          }}
         >
-          Save Trip
-        </button>
+          {trip.name}
+        </h1>
 
-        {/* PHOTOS */}
-        <div className={styles.section}>
-          <h2 className={styles.heading}>
-            Photos
-          </h2>
+        <p
+          style={{
+            opacity: 0.7,
+            fontSize:
+              "18px",
+          }}
+        >
+          {trip.location}
+        </p>
 
-          <div className={styles.form}>
-            <input
-              type="text"
-              placeholder="Image URL"
-              value={photoUrl}
-              onChange={(e) =>
-                setPhotoUrl(
-                  e.target.value
-                )
-              }
-              className={styles.input}
-            />
+        <p
+          style={{
+            opacity: 0.7,
+          }}
+        >
+          {trip.dates}
+        </p>
 
-            <button
-              onClick={addPhoto}
-              className={styles.button}
+        <div
+          style={{
+            marginTop:
+              "30px",
+
+            display: "flex",
+
+            gap: "20px",
+
+            flexWrap:
+              "wrap",
+          }}
+        >
+          <div
+            style={{
+              background:
+                "#1e293b",
+
+              padding:
+                "20px",
+
+              borderRadius:
+                "16px",
+
+              minWidth:
+                "220px",
+            }}
+          >
+            <h3>
+              Budget
+            </h3>
+
+            <p
+              style={{
+                fontSize:
+                  "28px",
+              }}
             >
-              Add Photo
-            </button>
+              {
+                trip.currency
+              }{" "}
+              {Number(
+                trip.budget ||
+                  0
+              ).toLocaleString()}
+            </p>
           </div>
 
-          <div className={styles.photos}>
-            {trip.photos.map(
-              (photo, index) => (
-                <div
-                  key={index}
-                  className={
-                    styles.photoCard
-                  }
-                >
-                  <img
-                    src={photo.url}
-                    alt="Trip"
-                    className={styles.image}
-                  />
+          <div
+            style={{
+              background:
+                "#1e293b",
 
-                  <button
-                    onClick={() =>
-                      deletePhoto(index)
-                    }
-                    className={
-                      styles.deleteSmall
-                    }
-                  >
-                    Delete
-                  </button>
-                </div>
-              )
-            )}
+              padding:
+                "20px",
+
+              borderRadius:
+                "16px",
+
+              minWidth:
+                "220px",
+            }}
+          >
+            <h3>
+              Expenses
+            </h3>
+
+            <p
+              style={{
+                fontSize:
+                  "28px",
+              }}
+            >
+              {
+                trip.currency
+              }{" "}
+              {totalExpenses.toLocaleString()}
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* EXPENSES */}
-        <div className={styles.section}>
-          <h2 className={styles.heading}>
-            Expenses
-          </h2>
+      {/* EXPENSES */}
 
-          <div className={styles.form}>
-            <input
-              type="text"
-              placeholder="Expense Name"
-              value={expenseLabel}
-              onChange={(e) =>
-                setExpenseLabel(
-                  e.target.value
-                )
-              }
-              className={styles.input}
-            />
+      <section
+        style={{
+          marginBottom:
+            "40px",
+        }}
+      >
+        <h2>
+          Expenses
+        </h2>
 
-            <input
-              type="number"
-              placeholder="Amount"
-              value={expenseAmount}
-              onChange={(e) =>
-                setExpenseAmount(
-                  e.target.value
-                )
-              }
-              className={styles.input}
-            />
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            flexWrap:
+              "wrap",
+            marginTop:
+              "20px",
+          }}
+        >
+          <input
+            placeholder="Label"
+            value={
+              newExpense.label
+            }
+            onChange={(e) =>
+              setNewExpense({
+                ...newExpense,
+                label:
+                  e.target.value,
+              })
+            }
+          />
 
-            <button
-              onClick={addExpense}
-              className={styles.button}
-            >
-              Add Expense
-            </button>
-          </div>
+          <input
+            placeholder="Category"
+            value={
+              newExpense.category
+            }
+            onChange={(e) =>
+              setNewExpense({
+                ...newExpense,
+                category:
+                  e.target.value,
+              })
+            }
+          />
 
-          <div className={styles.expenses}>
-            {trip.expenses.map(
-              (expense, index) => (
-                <div
-                  key={index}
-                  className={
-                    styles.expenseCard
-                  }
-                >
-                  <div>
-                    <p>
-                      {expense.label}
-                    </p>
+          <input
+            placeholder="Amount"
+            type="number"
+            value={
+              newExpense.amount
+            }
+            onChange={(e) =>
+              setNewExpense({
+                ...newExpense,
+                amount:
+                  e.target.value,
+              })
+            }
+          />
 
-                    <strong>
-                      {trip.currency}{" "}
-                      {expense.amount}
-                    </strong>
-                  </div>
+          <button
+            onClick={
+              addExpense
+            }
+          >
+            Add
+          </button>
+        </div>
+
+        <div
+          style={{
+            marginTop:
+              "20px",
+          }}
+        >
+          {trip.expenses.map(
+            (
+              expense: Expense,
+              index: number
+            ) => (
+              <div
+                key={index}
+                style={{
+                  background:
+                    "#1e293b",
+
+                  padding:
+                    "20px",
+
+                  borderRadius:
+                    "14px",
+
+                  marginBottom:
+                    "10px",
+
+                  display:
+                    "flex",
+
+                  justifyContent:
+                    "space-between",
+                }}
+              >
+                <div>
+                  <h3>
+                    {
+                      expense.label
+                    }
+                  </h3>
+
+                  <p>
+                    {
+                      expense.category
+                    }
+                  </p>
+                </div>
+
+                <div>
+                  <p>
+                    {
+                      trip.currency
+                    }{" "}
+                    {
+                      expense.amount
+                    }
+                  </p>
 
                   <button
                     onClick={() =>
@@ -506,30 +595,168 @@ export default function TripPage() {
                         index
                       )
                     }
-                    className={
-                      styles.deleteSmall
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      </section>
+
+      {/* PHOTOS */}
+
+      <section>
+        <h2>Photos</h2>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            flexWrap:
+              "wrap",
+            marginTop:
+              "20px",
+          }}
+        >
+          <input
+            placeholder="Image URL"
+            value={
+              newPhoto.url
+            }
+            onChange={(e) =>
+              setNewPhoto({
+                ...newPhoto,
+                url:
+                  e.target.value,
+              })
+            }
+          />
+
+          <input
+            placeholder="Caption"
+            value={
+              newPhoto.caption
+            }
+            onChange={(e) =>
+              setNewPhoto({
+                ...newPhoto,
+                caption:
+                  e.target.value,
+              })
+            }
+          />
+
+          <button
+            onClick={
+              addPhoto
+            }
+          >
+            Add
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+
+            gridTemplateColumns:
+              "repeat(auto-fit,minmax(250px,1fr))",
+
+            gap: "20px",
+
+            marginTop:
+              "30px",
+          }}
+        >
+          {trip.photos.map(
+            (
+              photo: Photo,
+              index: number
+            ) => (
+              <div
+                key={index}
+                style={{
+                  background:
+                    "#1e293b",
+
+                  borderRadius:
+                    "16px",
+
+                  overflow:
+                    "hidden",
+                }}
+              >
+                <img
+                  src={
+                    photo.url
+                  }
+                  alt={
+                    photo.caption
+                  }
+                  style={{
+                    width:
+                      "100%",
+
+                    height:
+                      "220px",
+
+                    objectFit:
+                      "cover",
+                  }}
+                />
+
+                <div
+                  style={{
+                    padding:
+                      "15px",
+                  }}
+                >
+                  <p>
+                    {
+                      photo.caption
+                    }
+                  </p>
+
+                  <button
+                    onClick={() =>
+                      deletePhoto(
+                        index
+                      )
                     }
                   >
                     Delete
                   </button>
                 </div>
-              )
-            )}
-          </div>
-
-          <div className={styles.total}>
-            Total Spent:
-            {" "}
-            {trip.currency}
-            {" "}
-            {totalExpenses}
-          </div>
+              </div>
+            )
+          )}
         </div>
+      </section>
 
-        {/* DELETE TRIP */}
+      {/* ACTIONS */}
+
+      <div
+        style={{
+          marginTop:
+            "50px",
+
+          display: "flex",
+
+          gap: "20px",
+        }}
+      >
         <button
-          onClick={deleteTrip}
-          className={styles.delete}
+  onClick={() => saveTrip()}
+>
+  Save Trip
+</button>
+
+        <button
+          onClick={
+            deleteTrip
+          }
         >
           Delete Trip
         </button>

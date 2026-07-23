@@ -1,54 +1,108 @@
 import mongoose from "mongoose";
 
-const ExpenseSchema = new mongoose.Schema({
-  label: String,
-  amount: Number,
-});
+const ExpenseSchema =
+  new mongoose.Schema({
+    label: {
+      type: String,
+      default: "",
+    },
 
-const PhotoSchema = new mongoose.Schema({
-  url: String,
-});
+    category: {
+      type: String,
+      default: "",
+    },
 
-const TripSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
+    amount: {
+      type: Number,
+      default: 0,
+    },
+  });
 
-  location: {
-    type: String,
-    default: "",
-  },
+const PhotoSchema =
+  new mongoose.Schema({
+    url: {
+      type: String,
+      default: "",
+    },
 
-  dates: {
-    type: String,
-    default: "",
-  },
+    caption: {
+      type: String,
+      default: "",
+    },
+  });
 
-  budget: {
-    type: Number,
-    default: 0,
-  },
+const TripSchema =
+  new mongoose.Schema(
+    {
+      user: {
+        type:
+          mongoose.Schema.Types.ObjectId,
 
-  currency: {
-    type: String,
-    default: "KES",
-  },
+        ref: "User",
 
-  expenses: [ExpenseSchema],
+        required: true,
+      },
 
-  photos: [PhotoSchema],
+      name: {
+        type: String,
 
-  coords: {
-    type: [Number],
-    default: [0, 0],
-  },
+        required: true,
+      },
 
-  image: {
-    type: String,
-    default: "",
-  },
-});
+      location: {
+        type: String,
+
+        default: "",
+      },
+
+      dates: {
+        type: String,
+
+        default: "",
+      },
+
+      budget: {
+        type: Number,
+
+        default: 0,
+      },
+
+      currency: {
+        type: String,
+
+        default: "KES",
+      },
+
+      expenses: {
+        type: [ExpenseSchema],
+
+        default: [],
+      },
+
+      photos: {
+        type: [PhotoSchema],
+
+        default: [],
+      },
+
+      coords: {
+        type: [Number],
+
+        default: [],
+      },
+
+      image: {
+        type: String,
+
+        default:
+          "/placeholder.svg",
+      },
+    },
+
+    {
+      timestamps: true,
+    }
+  );
 
 export default mongoose.model(
   "Trip",

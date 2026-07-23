@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import Link from "next/link";
 import Image from "next/image";
+
+import { useRouter } from "next/navigation";
+
 import styles from "./dashboard.module.css";
 
 type Trip = {
@@ -12,54 +16,92 @@ type Trip = {
   dates?: string;
   budget?: number;
   currency?: string;
-  expenses?: [];
-  photos?: [];
   image?: string;
 };
 
 export default function DashboardPage() {
-  const [trips, setTrips] = useState<
-    Trip[]
-  >([]);
+  const router = useRouter();
+
+  const [trips, setTrips] =
+    useState<Trip[]>([]);
 
   const [loading, setLoading] =
     useState(true);
 
-  const [error, setError] =
+  const [userName, setUserName] =
     useState("");
 
   useEffect(() => {
-    const fetchTrips =
-      async () => {
-        try {
-          const response =
-            await fetch(
-              "http://localhost:5000/api/trips"
-            );
+    const token =
+      localStorage.getItem(
+        "token"
+      );
 
-          if (!response.ok) {
-            throw new Error(
-              "Failed to fetch trips"
-            );
-          }
+    const user =
+      localStorage.getItem(
+        "user"
+      );
 
-          const data =
-            await response.json();
+    // REDIRECT IF NO TOKEN
+    if (!token) {
+      router.push("/login");
+      return;
+    }
 
-          setTrips(data);
-        } catch (err) {
-          console.error(err);
+    // LOAD USER NAME
+    if (user) {
+      const parsedUser =
+        JSON.parse(user);
 
-          setError(
-            "Could not load trips."
-          );
-        } finally {
-          setLoading(false);
-        }
-      };
+      setUserName(
+        parsedUser.name
+      );
+    }
 
-    fetchTrips();
+    fetchTrips(token);
   }, []);
+
+  const fetchTrips = async (
+    token: string
+  ) => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/trips",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Failed to fetch trips"
+        );
+      }
+
+      const data =
+        await response.json();
+
+      setTrips(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem(
+      "token"
+    );
+
+    localStorage.removeItem(
+      "user"
+    );
+
+    router.push("/login");
+  };
 
   if (loading) {
     return (
@@ -71,36 +113,40 @@ export default function DashboardPage() {
     );
   }
 
-  if (error) {
-    return (
-      <main className={styles.page}>
-        <p className={styles.error}>
-          {error}
-        </p>
-      </main>
-    );
-  }
-
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>
-          Voyage Vault Dashboard
-        </h1>
+        <div>
+          <h1 className={styles.title}>
+            Voyage Vault
+          </h1>
 
-        <p className={styles.subtitle}>
-          Everything you need for
-          your next journey
-        </p>
+          <p className={styles.subtitle}>
+            Welcome back,
+            {" "}
+            {userName}
+          </p>
+        </div>
 
-        <Link
-          href="/create"
-          className={
-            styles.createButton
-          }
-        >
-          + New Trip
-        </Link>
+        <div className={styles.actions}>
+          <Link
+            href="/create"
+            className={
+              styles.createButton
+            }
+          >
+            + New Trip
+          </Link>
+
+          <button
+            onClick={logout}
+            className={
+              styles.logoutButton
+            }
+          >
+            Logout
+          </button>
+        </div>
       </header>
 
       <section className={styles.section}>
@@ -114,7 +160,7 @@ export default function DashboardPage() {
 
         {trips.length === 0 ? (
           <p className={styles.message}>
-            No trips available yet.
+            No trips found.
           </p>
         ) : (
           <div
@@ -137,8 +183,9 @@ export default function DashboardPage() {
                 >
                   <Image
                     src={
-                      trip.image ||
-                      "/placeholder.svg"
+                      trip.image
+                        ? trip.image
+                        : "/placeholder.svg"
                     }
                     alt={trip.name}
                     fill
@@ -167,7 +214,7 @@ export default function DashboardPage() {
                     }
                   >
                     {trip.location ||
-                      "Unknown Location"}
+                      "Unknown location"}
                   </p>
 
                   <p
@@ -188,30 +235,7 @@ export default function DashboardPage() {
                     {" "}
                     {trip.currency}
                     {" "}
-                    {trip.budget ||
-                      0}
-                  </p>
-
-                  <p
-                    className={
-                      styles.tripMeta
-                    }
-                  >
-                    Expenses:
-                    {" "}
-                    {trip.expenses
-                      ?.length || 0}
-                  </p>
-
-                  <p
-                    className={
-                      styles.tripMeta
-                    }
-                  >
-                    Photos:
-                    {" "}
-                    {trip.photos
-                      ?.length || 0}
+                    {trip.budget}
                   </p>
                 </div>
               </Link>

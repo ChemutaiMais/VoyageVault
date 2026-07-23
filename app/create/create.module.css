@@ -1,51 +1,99 @@
 .page {
-    min-height: 100vh;
-    background: #0f172a;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 40px;
-  }
-  
-  .card {
-    width: 100%;
-    max-width: 500px;
-    background: #111827;
-    padding: 30px;
-    border-radius: 20px;
-  }
-  
-  .title {
-    color: white;
-    font-size: 32px;
-    margin-bottom: 30px;
-    text-align: center;
-  }
-  
-  .form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  
-  .input {
-    padding: 14px;
-    border-radius: 12px;
-    border: none;
-    font-size: 16px;
-  }
-  
-  .button {
-    padding: 14px;
-    border: none;
-    border-radius: 12px;
-    background: #2563eb;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  
-  .button:hover {
-    background: #1d4ed8;
-  }
+  min-height: 100vh;
+  background: #0f172a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.form {
+  width: 100%;
+  max-width: 700px;
+  background: #1e293b;
+  padding: 32px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.title {
+  color: white;
+  font-size: 32px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.input {
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  background: #334155;
+  color: white;
+}
+
+.input::placeholder {
+  color: #cbd5e1;
+}
+
+.button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: #1d4ed8;
+}
+
+.uploadBox {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.uploadButton {
+  background: #7c3aed;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.preview {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.dateRow {
+  display: flex;
+  gap: 16px;
+}
+
+.dateBox {
+  flex: 1;
+}
+
+.label {
+  color: white;
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.mapBox {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

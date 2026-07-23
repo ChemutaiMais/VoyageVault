@@ -1,127 +1,211 @@
 import express from "express";
+
 import Trip from "../models/Trip.js";
+
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 //
-// GET ALL TRIPS
+// GET USER TRIPS
 //
-router.get("/", async (req, res) => {
-  try {
-    const trips = await Trip.find();
+router.get(
+  "/",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const trips =
+        await Trip.find({
+          user: req.user.id,
+        }).sort({
+          createdAt: -1,
+        });
 
-    res.json(trips);
-  } catch (err) {
-    res.status(500).json({
-      error: err.message,
-    });
+      res.json(trips);
+    } catch (err) {
+      res.status(500).json({
+        error: err.message,
+      });
+    }
   }
-});
+);
 
 //
 // GET SINGLE TRIP
 //
-router.get("/:id", async (req, res) => {
-  try {
-    const trip = await Trip.findById(
-      req.params.id
-    );
+router.get(
+  "/:id",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const trip =
+        await Trip.findOne({
+          _id: req.params.id,
 
-    if (!trip) {
-      return res.status(404).json({
-        message: "Trip not found",
+          user: req.user.id,
+        });
+
+      if (!trip) {
+        return res
+          .status(404)
+          .json({
+            message:
+              "Trip not found",
+          });
+      }
+
+      res.json(trip);
+    } catch (err) {
+      res.status(500).json({
+        error: err.message,
       });
     }
-
-    res.json(trip);
-  } catch (err) {
-    res.status(500).json({
-      error: err.message,
-    });
   }
-});
+);
 
 //
 // CREATE TRIP
 //
-router.post("/", async (req, res) => {
-  try {
-    const newTrip = new Trip({
-      name: req.body.name,
-      destination:
-        req.body.destination || "",
-      startDate:
-        req.body.startDate || null,
-      endDate:
-        req.body.endDate || null,
-      expenses:
-        req.body.expenses || [],
-      photos: req.body.photos || [],
-    });
+router.post(
+  "/",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const newTrip =
+        new Trip({
+          user: req.user.id,
 
-    const savedTrip =
-      await newTrip.save();
+          name:
+            req.body.name,
 
-    res.status(201).json(savedTrip);
-  } catch (err) {
-    res.status(400).json({
-      error: err.message,
-    });
+          location:
+            req.body.location ||
+            "",
+
+          dates:
+            req.body.dates ||
+            "",
+
+          budget:
+            req.body.budget ||
+            0,
+
+          currency:
+            req.body.currency ||
+            "KES",
+
+          expenses:
+            req.body.expenses ||
+            [],
+
+          photos:
+            req.body.photos ||
+            [],
+
+          coords:
+            req.body.coords ||
+            [],
+
+          image:
+            req.body.image ||
+            "/placeholder.svg",
+        });
+
+      const savedTrip =
+        await newTrip.save();
+
+      res.status(201).json(
+        savedTrip
+      );
+    } catch (err) {
+      res.status(400).json({
+        error: err.message,
+      });
+    }
   }
-});
+);
 
 //
 // UPDATE TRIP
 //
-router.put("/:id", async (req, res) => {
-  try {
-    const updatedTrip =
-      await Trip.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        {
-          new: true,
-        }
-      );
+router.put(
+  "/:id",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const updatedTrip =
+        await Trip.findOneAndUpdate(
+          {
+            _id:
+              req.params.id,
 
-    if (!updatedTrip) {
-      return res.status(404).json({
-        message: "Trip not found",
+            user:
+              req.user.id,
+          },
+
+          req.body,
+
+          {
+            new: true,
+          }
+        );
+
+      if (!updatedTrip) {
+        return res
+          .status(404)
+          .json({
+            message:
+              "Trip not found",
+          });
+      }
+
+      res.json(updatedTrip);
+    } catch (err) {
+      res.status(500).json({
+        error: err.message,
       });
     }
-
-    res.json(updatedTrip);
-  } catch (err) {
-    res.status(500).json({
-      error: err.message,
-    });
   }
-});
+);
 
 //
 // DELETE TRIP
 //
-router.delete("/:id", async (req, res) => {
-  try {
-    const deletedTrip =
-      await Trip.findByIdAndDelete(
-        req.params.id
-      );
+router.delete(
+  "/:id",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const deletedTrip =
+        await Trip.findOneAndDelete(
+          {
+            _id:
+              req.params.id,
 
-    if (!deletedTrip) {
-      return res.status(404).json({
-        message: "Trip not found",
+            user:
+              req.user.id,
+          }
+        );
+
+      if (!deletedTrip) {
+        return res
+          .status(404)
+          .json({
+            message:
+              "Trip not found",
+          });
+      }
+
+      res.json({
+        message:
+          "Trip deleted successfully",
+      });
+    } catch (err) {
+      res.status(500).json({
+        error: err.message,
       });
     }
-
-    res.json({
-      message: "Trip deleted successfully",
-    });
-  } catch (err) {
-    res.status(500).json({
-      error: err.message,
-    });
   }
-});
+);
 
 export default router;
